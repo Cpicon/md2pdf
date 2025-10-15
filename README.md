@@ -16,12 +16,14 @@ Convert Markdown files with Mermaid diagrams to professional PDF documents.
 ### Homebrew (macOS/Linux)
 
 ```bash
-# Install from local tap
-brew install --formula ~/PycharmProjects/md2pdf/Formula/md2pdf.rb
+# Add the Homebrew tap for md2pdf
+brew tap cpicon/md2pdf
 
-# Or create a symlink for quick access
-sudo ln -s ~/PycharmProjects/md2pdf/bin/md2pdf /usr/local/bin/md2pdf
+# Install md2pdf from the tap
+brew install cpicon/md2pdf/md2pdf
 ```
+
+This installs `md2pdf` from the Homebrew tap `cpicon/md2pdf` (formula located under `Formula/md2pdf.rb`) hosted at the repository: `https://github.com/Cpicon/homebrew-md2pdf`.
 
 ### Manual Installation
 
