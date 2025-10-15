@@ -29,7 +29,7 @@ This installs `md2pdf` from the Homebrew tap `cpicon/md2pdf` (formula located un
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/md2pdf.git
+git clone https://github.com/cpicon/md2pdf.git
 cd md2pdf
 
 # Make the script executable
