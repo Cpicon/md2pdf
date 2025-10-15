@@ -3,8 +3,8 @@
 
 class Md2pdf < Formula
   desc "Convert Markdown files with Mermaid diagrams to PDF"
-  homepage "https://github.com/yourusername/md2pdf"
-  url "file:///Users/christianpiconcalderon/PycharmProjects/md2pdf"
+  homepage "https://github.com/Cpicon/md2pdf.git"
+  url "https://github.com/Cpicon/md2pdf.git"
   version "1.0.0"
 
   # Dependencies
