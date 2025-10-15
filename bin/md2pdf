@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# md2pdf - Convert Markdown with Mermaid diagrams to PDF
+# Version: 1.0.0
+# Usage: md2pdf <input.md> [output.pdf]
+
+set -e
+
+INPUT_FILE="$1"
+OUTPUT_FILE="${2:-${INPUT_FILE%.md}.pdf}"
+
+if [ -z "$INPUT_FILE" ]; then
+    echo "Usage: md2pdf <input.md> [output.pdf]"
+    echo ""
+    echo "Convert Markdown files with Mermaid diagrams to PDF"
+    echo ""
+    echo "Examples:"
+    echo "  md2pdf document.md              # Creates document.pdf"
+    echo "  md2pdf document.md output.pdf   # Creates output.pdf"
+    exit 1
+fi
+
+if [ ! -f "$INPUT_FILE" ]; then
+    echo "Error: Input file '$INPUT_FILE' not found"
+    exit 1
+fi
+
+# Create temporary directory
+TEMP_DIR=$(mktemp -d)
+trap "rm -rf $TEMP_DIR" EXIT
+
+echo "Processing Mermaid diagrams..."
+
+# Python script to process markdown and embed base64 images
+python3 << 'PYTHON_SCRIPT' - "$INPUT_FILE" "$TEMP_DIR"
+import sys
+import re
+import subprocess
+import base64
+import os
+
+input_file = sys.argv[1]
+temp_dir = sys.argv[2]
+
+with open(input_file, 'r') as f:
+    content = f.read()
+
+diagram_count = 0
+
+def replace_mermaid(match):
+    global diagram_count
+    diagram_count += 1
+
+    mermaid_code = match.group(1)
+
+    # Write mermaid code to temp file
+    mmd_file = os.path.join(temp_dir, f'diagram_{diagram_count}.mmd')
+    png_file = os.path.join(temp_dir, f'diagram_{diagram_count}.png')
+
+    with open(mmd_file, 'w') as f:
+        f.write(mermaid_code)
+
+    # Generate PNG using mmdc
+    try:
+        subprocess.run([
+            'mmdc', '-i', mmd_file, '-o', png_file,
+            '-b', 'white', '-t', 'default', '-w', '1400', '-H', '1000'
+        ], check=True, capture_output=True)
+
+        # Read PNG and convert to base64
+        with open(png_file, 'rb') as f:
+            img_data = base64.b64encode(f.read()).decode('utf-8')
+
+        # Return markdown with embedded base64 image
+        return f'\n![Diagram {diagram_count}](data:image/png;base64,{img_data})\n'
+    except Exception as e:
+        print(f"Error generating diagram {diagram_count}: {e}", file=sys.stderr)
+        return match.group(0)  # Return original if failed
+
+# Replace all mermaid code blocks with embedded images
+pattern = r'```mermaid\n(.*?)```'
+processed_content = re.sub(pattern, replace_mermaid, content, flags=re.DOTALL)
+
+# Write processed markdown
+output_md = os.path.join(temp_dir, 'processed.md')
+with open(output_md, 'w') as f:
+    f.write(processed_content)
+
+print(f"Processed {diagram_count} Mermaid diagram(s)")
+PYTHON_SCRIPT
+
+echo "Generating PDF..."
+
+# Convert processed markdown to PDF
+TEMP_MD="$TEMP_DIR/processed.md"
+md-to-pdf "$TEMP_MD"
+
+# Move the generated PDF to the desired output location
+TEMP_PDF="${TEMP_MD%.md}.pdf"
+if [ -f "$TEMP_PDF" ]; then
+    mv "$TEMP_PDF" "$OUTPUT_FILE"
+    echo "PDF generated successfully: $OUTPUT_FILE"
+else
+    echo "Error: PDF generation failed"
+    exit 1
+fi
